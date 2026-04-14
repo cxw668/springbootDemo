@@ -1,0 +1,40 @@
+# 定义环境变量
+@baseUrl = http://127.0.0.1:8080
+@token = 1234567890
+
+### 1. 获取用户列表
+GET {{baseUrl}}/user/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### 2. 创建新用户
+POST {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Alice",
+  "age": 18
+}
+
+### 3. 更新用户（需先获取version）
+PUT {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": 1,
+  "name": "Alice Updated",
+  "age": 20,
+  "version": 1
+}
+
+### 4. 删除用户
+DELETE {{baseUrl}}/user/1
+Authorization: Bearer {{token}}
+
+### 5. 条件搜索
+GET {{baseUrl}}/user/search?name=Alice&age=18
+Authorization: Bearer {{token}}
+
+
