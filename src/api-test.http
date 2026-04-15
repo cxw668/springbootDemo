@@ -2,12 +2,14 @@
 @baseUrl = http://127.0.0.1:8080
 @token = 1234567890
 
-### 1. 获取用户列表
+### ==================== 基础 CRUD ====================
+
+### 1. 获取用户列表（分页）
 GET {{baseUrl}}/user/page?pageNo=1&pageSize=10
 Authorization: Bearer {{token}}
-Content-Type: application/json
 
 ### 2. 创建新用户
+# @name createUser
 POST {{baseUrl}}/user
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -29,7 +31,7 @@ Authorization: Bearer {{token}}
   "version": 1
 }
 
-### 4. 删除用户
+### 4. 删除用户（逻辑删除）
 DELETE {{baseUrl}}/user/1
 Authorization: Bearer {{token}}
 
@@ -37,4 +39,130 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/user/search?name=Alice&age=18
 Authorization: Bearer {{token}}
 
+### ==================== 高级查询 ====================
+
+### 6. 分页 + 模糊搜索姓名
+GET {{baseUrl}}/user/page?pageNo=1&pageSize=5&name=Ali
+Authorization: Bearer {{token}}
+
+### 7. 分页 + 年龄筛选
+GET {{baseUrl}}/user/page?pageNo=1&pageSize=10&age=25
+Authorization: Bearer {{token}}
+
+### 8. 分页 + 时间范围
+GET {{baseUrl}}/user/page?pageNo=1&pageSize=10&start=2026-04-14T00:00:00&end=2026-04-15T23:59:59
+Authorization: Bearer {{token}}
+
+### ==================== 边界与异常测试 ====================
+
+### 9. 创建用户 - 空姓名
+POST {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "",
+  "age": 25
+}
+
+### 10. 创建用户 - 缺少年龄字段
+POST {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "NoAge"
+}
+
+### 11. 分页 - 越界页码
+GET {{baseUrl}}/user/page?pageNo=999&pageSize=10
+Authorization: Bearer {{token}}
+
+### 12. 更新 - 不存在 ID
+PUT {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": 9999,
+  "name": "Ghost",
+  "age": 30,
+  "version": 1
+}
+
+### 13. 删除 - 不存在的记录
+DELETE {{baseUrl}}/user/9999
+Authorization: Bearer {{token}}
+
+### ==================== 并发与乐观锁测试 ====================
+
+### 14. 并发修改模拟（乐观锁冲突）
+# 步骤 A：先读取用户数据，记录 version
+GET {{baseUrl}}/user/search?name=Alice
+Authorization: Bearer {{token}}
+
+### 步骤 B：用旧 version 更新（模拟冲突，预期返回 false）
+PUT {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": 1,
+  "name": "Conflict Update",
+  "age": 99,
+  "version": 0
+}
+
+### ==================== 组合业务场景 ====================
+
+### 15. 创建后查询验证
+# @name createAndVerify
+POST {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "VerifyMe",
+  "age": 22
+}
+
+### 验证刚才创建的用户
+GET {{baseUrl}}/user/search?name=VerifyMe
+Authorization: Bearer {{token}}
+
+### 16. 批量操作后查询总数
+# 先创建多条数据
+### 创建用户 1
+POST {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Batch_1",
+  "age": 20
+}
+
+### 创建用户 2
+POST {{baseUrl}}/user
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Batch_2",
+  "age": 21
+}
+
+### 查看分页总数是否增加
+GET {{baseUrl}}/user/page?pageNo=1&pageSize=100
+Authorization: Bearer {{token}}
+
+### ==================== 性能观察 ====================
+
+### 17. 空条件查询 - 观察响应时间
+GET {{baseUrl}}/user/page?pageNo=1&pageSize=1000
+Authorization: Bearer {{token}}
+
+### 18. 精确匹配 - 高选择性查询
+GET {{baseUrl}}/user/search?name=ExactMatch
+Authorization: Bearer {{token}}
 
