@@ -51,6 +51,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("ResultTest");
             user.setAge(25);
+            user.setPhone("12800000000");
 
             mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -67,6 +68,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("DeleteResultTest");
             user.setAge(30);
+            user.setPhone("13100000000");
 
             MvcResult createResult = mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -100,6 +102,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("");
             user.setAge(25);
+            user.setPhone("12510000000");
 
             mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -115,7 +118,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("NoAge");
             // age is null
-
+            user.setPhone("10000000000");
             mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(user)))
@@ -130,6 +133,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("NegativeAge");
             user.setAge(-5);
+            user.setPhone("150000000000");
 
             mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -145,6 +149,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("TooOld");
             user.setAge(200);
+            user.setPhone("12100000000");
 
             mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -160,6 +165,7 @@ class UserControllerTests {
             User user = new User();
             user.setName("NoId");
             user.setAge(25);
+            user.setPhone("125100000000");
             // id is null
 
             mockMvc.perform(put("/user")
@@ -191,6 +197,7 @@ class UserControllerTests {
             user.setId(9999L);
             user.setName("Ghost");
             user.setAge(30);
+            user.setPhone("15000000000");
             user.setVersion(1);
 
             mockMvc.perform(put("/user")

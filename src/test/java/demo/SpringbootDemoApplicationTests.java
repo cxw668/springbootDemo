@@ -107,12 +107,12 @@ class SpringbootDemoApplicationTests {
             user2.setAge(23);
             userService.save(user2);
 
-            IPage<User> pageBefore = userService.pageQuery(1, 10, null, null, null, null);
+            IPage<User> pageBefore = userService.pageQuery(1, 10, null, null, null, null, null);
             assertEquals(2, pageBefore.getTotal(), "Should have 2 records before delete");
 
             userService.removeById(user1.getId());
 
-            IPage<User> pageAfter = userService.pageQuery(1, 10, null, null, null, null);
+            IPage<User> pageAfter = userService.pageQuery(1, 10, null, null, null, null, null);
             assertEquals(1, pageAfter.getTotal(), "Should have 1 record after logical delete");
             assertEquals("Visible2", pageAfter.getRecords().get(0).getName());
         }
@@ -176,10 +176,11 @@ class SpringbootDemoApplicationTests {
                 User user = new User();
                 user.setName("User" + i);
                 user.setAge(20 + i);
+                user.setPhone("1390000000" + i);
                 userService.save(user);
             }
 
-            IPage<User> page = userService.pageQuery(1, 5, null, null, null, null);
+            IPage<User> page = userService.pageQuery(1, 5, null, null, null, null, null);
             assertEquals(10, page.getTotal(), "Total should be 10");
             assertEquals(5, page.getSize(), "Page size should be 5");
             assertEquals(2, page.getPages(), "Should have 2 pages");
@@ -192,14 +193,16 @@ class SpringbootDemoApplicationTests {
             User user1 = new User();
             user1.setName("Alice");
             user1.setAge(25);
+            user1.setPhone("12500000000");
             userService.save(user1);
 
             User user2 = new User();
             user2.setName("Bob");
             user2.setAge(30);
+            user2.setPhone("13000000000");
             userService.save(user2);
 
-            IPage<User> page = userService.pageQuery(1, 10, "Ali", null, null, null);
+            IPage<User> page = userService.pageQuery(1, 10, "Ali", null, null, null, null);
             assertEquals(1, page.getTotal(), "Should match only Alice");
             assertEquals("Alice", page.getRecords().get(0).getName());
         }
@@ -217,7 +220,7 @@ class SpringbootDemoApplicationTests {
             user2.setAge(50);
             userService.save(user2);
 
-            IPage<User> page = userService.pageQuery(1, 10, null, 18, null, null);
+            IPage<User> page = userService.pageQuery(1, 10, null, 18, null, null, null);
             assertEquals(1, page.getTotal(), "Should match only age 18");
         }
 
@@ -234,14 +237,14 @@ class SpringbootDemoApplicationTests {
             boolean saved = userService.saveBatch(users);
             assertTrue(saved, "Batch save should return true");
 
-            IPage<User> page = userService.pageQuery(1, 10, null, null, null, null);
+            IPage<User> page = userService.pageQuery(1, 10, null, null, null, null, null);
             assertEquals(5, page.getTotal(), "Should have 5 records");
 
             boolean deleted = userService.removeBatchByIds(
                     users.stream().map(User::getId).toList());
             assertTrue(deleted, "Batch delete should return true");
 
-            IPage<User> afterDelete = userService.pageQuery(1, 10, null, null, null, null);
+            IPage<User> afterDelete = userService.pageQuery(1, 10, null, null, null, null, null);
             assertEquals(0, afterDelete.getTotal(), "All records should be logically deleted");
         }
     }

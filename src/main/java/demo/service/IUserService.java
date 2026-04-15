@@ -13,5 +13,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2026-04-14
  */
 public interface IUserService extends IService<User> {
-    IPage<User> pageQuery(int pageNo, int pageSize, String name, Integer age, java.time.LocalDateTime start, java.time.LocalDateTime end);
+    IPage<User> pageQuery(int pageNo, int pageSize, String name, Integer age, String phone, java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

@@ -5,6 +5,8 @@ import demo.common.BizException;
 import demo.common.Result;
 import demo.model.User;
 import demo.service.impl.UserServiceImpl;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -34,19 +36,21 @@ public class UserController {
      * @param pageSize 每页大小，默认10
      * @param name     姓名（模糊查询）
      * @param age      年龄
+     * @param phone    手机号
      * @param start    开始时间
      * @param end      结束时间
      * @return 分页结果
      */
     @GetMapping("/page")
     public Result<IPage<User>> pageQuery(
-            @RequestParam(defaultValue = "1") int pageNo,
-            @RequestParam(defaultValue = "10") int pageSize,
+            @Min(value = 1, message = "页码不能小于1") @RequestParam(defaultValue = "1") int pageNo,
+            @Min(value = 1, message = "页大小不能小于1") @Max(value = 100, message = "页大小不能大于100") @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer age,
+            @RequestParam(required = false) String phone,
             @RequestParam(required = false) LocalDateTime start,
             @RequestParam(required = false) LocalDateTime end) {
-        return Result.success(userService.pageQuery(pageNo, pageSize, name, age, start, end));
+        return Result.success(userService.pageQuery(pageNo, pageSize, name, age, phone, start, end));
     }
 
     /**
@@ -62,9 +66,10 @@ public class UserController {
     public Result<List<User>> search(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer age,
+            @RequestParam(required = false) String phone,
             @RequestParam(required = false) LocalDateTime start,
             @RequestParam(required = false) LocalDateTime end) {
-        return Result.success(userService.pageQuery(1, Integer.MAX_VALUE, name, age, start, end).getRecords());
+        return Result.success(userService.pageQuery(1, Integer.MAX_VALUE, name, age, phone, start, end).getRecords());
     }
 
     /**

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
+import demo.common.Phone;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -59,6 +60,13 @@ public class User implements Serializable {
     @Min(value = 0, message = "年龄不能小于0", groups = CreateGroup.class)
     @Max(value = 150, message = "年龄不能超过150", groups = CreateGroup.class)
     private Integer age;
+
+    /**
+     * 手机号
+     */
+    @TableField("phone")
+    @Phone(message = "手机号格式不正确", groups = CreateGroup.class)
+    private String phone;
 
     /**
      * 创建时间
