@@ -36,7 +36,7 @@ class SpringbootDemoApplicationTests {
             LocalDateTime before = LocalDateTime.now().minusSeconds(1);
 
             User user = new User();
-            user.setName("AutoFillTest");
+            user.setName("AutoFillTest" + before);
             user.setAge(25);
             userService.save(user);
 
@@ -50,16 +50,20 @@ class SpringbootDemoApplicationTests {
         @DisplayName("updateFill - updateTime is auto-filled on update")
         void testAutoFillOnUpdate() {
             User user = new User();
-            user.setName("UpdateFillTest");
+            user.setName("UpdateFillTest" + LocalDateTime.now());
             user.setAge(30);
             userService.save(user);
 
             LocalDateTime createTime = user.getCreateTime();
             LocalDateTime firstUpdateTime = user.getUpdateTime();
 
-            Thread.sleep(1000);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
-            user.setName("UpdatedName");
+            user.setName("UpdatedName" + createTime);
             userService.updateById(user);
 
             assertNotNull(user.getUpdateTime(), "updateTime should be refreshed on update");
@@ -94,12 +98,12 @@ class SpringbootDemoApplicationTests {
         @DisplayName("query excludes logically deleted records")
         void testQueryExcludesDeletedRecords() {
             User user1 = new User();
-            user1.setName("Visible1");
+            user1.setName("Visible1" + LocalDateTime.now());
             user1.setAge(22);
             userService.save(user1);
 
             User user2 = new User();
-            user2.setName("Visible2");
+            user2.setName("Visible2" + LocalDateTime.now());
             user2.setAge(23);
             userService.save(user2);
 
@@ -122,7 +126,8 @@ class SpringbootDemoApplicationTests {
         @DisplayName("updateById increments version on successful update")
         void testVersionIncrement() {
             User user = new User();
-            user.setName("VersionTest");
+            LocalDateTime now = LocalDateTime.now();
+            user.setName("VersionTest" + now);
             user.setAge(25);
             userService.save(user);
 
@@ -130,7 +135,7 @@ class SpringbootDemoApplicationTests {
             assertNotNull(initialVersion, "Version should be set after insert");
             assertEquals(1, initialVersion, "Initial version should be 1");
 
-            user.setName("UpdatedVersion");
+            user.setName("UpdatedVersion" + now);
             userService.updateById(user);
 
             assertEquals(2, user.getVersion(), "Version should increment to 2 after update");

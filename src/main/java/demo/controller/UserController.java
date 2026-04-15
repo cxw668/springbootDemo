@@ -1,10 +1,12 @@
 package demo.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import demo.common.BizException;
+import demo.common.Result;
 import demo.model.User;
-import demo.service.IUserService;
 import demo.service.impl.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -37,14 +39,14 @@ public class UserController {
      * @return 分页结果
      */
     @GetMapping("/page")
-    public IPage<User> pageQuery(
+    public Result<IPage<User>> pageQuery(
             @RequestParam(defaultValue = "1") int pageNo,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer age,
             @RequestParam(required = false) LocalDateTime start,
             @RequestParam(required = false) LocalDateTime end) {
-        return userService.pageQuery(pageNo, pageSize, name, age, start, end);
+        return Result.success(userService.pageQuery(pageNo, pageSize, name, age, start, end));
     }
 
     /**
@@ -57,12 +59,12 @@ public class UserController {
      * @return 用户列表
      */
     @GetMapping("/search")
-    public List<User> search(
+    public Result<List<User>> search(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer age,
             @RequestParam(required = false) LocalDateTime start,
             @RequestParam(required = false) LocalDateTime end) {
-        return userService.pageQuery(1, Integer.MAX_VALUE, name, age, start, end).getRecords();
+        return Result.success(userService.pageQuery(1, Integer.MAX_VALUE, name, age, start, end).getRecords());
     }
 
     /**
@@ -72,8 +74,12 @@ public class UserController {
      * @return 是否成功
      */
     @PostMapping
-    public boolean create(@RequestBody User user) {
-        return userService.save(user);
+    public Result<Boolean> create(@Validated(User.CreateGroup.class) @RequestBody User user) {
+        boolean saved = userService.save(user);
+        if (!saved) {
+            throw new BizException("用户创建失败");
+        }
+        return Result.success(true);
     }
 
     /**
@@ -83,8 +89,12 @@ public class UserController {
      * @return 是否成功
      */
     @PutMapping
-    public boolean update(@RequestBody User user) {
-        return userService.updateById(user);
+    public Result<Boolean> update(@Validated(User.UpdateGroup.class) @RequestBody User user) {
+        boolean updated = userService.updateById(user);
+        if (!updated) {
+            throw new BizException("用户更新失败，可能版本号过期或记录不存在");
+        }
+        return Result.success(true);
     }
 
     /**
@@ -94,7 +104,11 @@ public class UserController {
      * @return 是否成功
      */
     @DeleteMapping("/{id}")
-    public boolean delete(@PathVariable Long id) {
-        return userService.removeById(id);
+    public Result<Boolean> delete(@PathVariable Long id) {
+        boolean removed = userService.removeById(id);
+        if (!removed) {
+            throw new BizException("用户不存在");
+        }
+        return Result.success(true);
     }
 }
