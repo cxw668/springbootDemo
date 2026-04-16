@@ -15,3 +15,20 @@ logging:
   level:
     root: INFO
     demo: INFO
+
+app:
+  allowed-origins: https://youdomain.com
+  allowed-methods: GET,POST
+  max-age: 7200
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+security:
+  auth:
+    ip-whitelist:
+      - 127.0.0.1
+      - 192.168.1.1

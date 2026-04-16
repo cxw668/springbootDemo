@@ -8,3 +8,9 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+
+app:
+  default-page-size: 5
+  max-page-size: 50
+  cors:
+    allowed-origins: "*"

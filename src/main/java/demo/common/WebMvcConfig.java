@@ -1,8 +1,10 @@
 package demo.common;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -12,16 +14,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * 2. 配置全局 CORS 跨域策略
  */
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RequestLoggingInterceptor requestLoggingInterceptor;
     private final SimpleAuthInterceptor simpleAuthInterceptor;
-
-    public WebMvcConfig(RequestLoggingInterceptor requestLoggingInterceptor,
-                        SimpleAuthInterceptor simpleAuthInterceptor) {
-        this.requestLoggingInterceptor = requestLoggingInterceptor;
-        this.simpleAuthInterceptor = simpleAuthInterceptor;
-    }
+    private final AppProperties appProperties;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -42,5 +40,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 映射上传目录到 /uploads/** 路径
+        String uploadPath = appProperties.getFileUpload().getUploadDir();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + uploadPath + "/");
     }
 }

@@ -1,0 +1,28 @@
+### 上传用户头像
+POST http://localhost:8080/api/files/avatar
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="file"; filename="test-avatar.png"
+Content-Type: image/png
+
+< ./test-avatar.png
+--boundary123
+Content-Disposition: form-data; name="userId"
+
+2044095203160424450
+--boundary123--
+
+### 通用文件上传
+#POST http://localhost:8080/api/files/upload?subDir=documents
+#Content-Type: multipart/form-data; boundary=boundary456
+#
+#--boundary456
+#Content-Disposition: form-data; name="file"; filename="document.pdf"
+#Content-Type: application/pdf
+#
+#< ./document.pdf
+#--boundary456--
+
+### 删除文件
+#DELETE http://localhost:8080/api/files/delete?filePath=/avatars/2024/01/15/abc123.jpg

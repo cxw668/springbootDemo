@@ -17,7 +17,8 @@ public enum BizCode {
     NOT_FOUND(404, "资源不存在"),
     CONFLICT(409, "数据冲突"),
     VALIDATION_ERROR(422, "参数校验失败"),
-    INTERNAL_ERROR(500, "服务器内部错误");
+    INTERNAL_ERROR(500, "服务器内部错误"),
+    NOT_FOUND_USER(404, "用户不存在" );
 
     private final int code;
     private final String message;

@@ -17,6 +17,25 @@ logging:
     root: DEBUG
     demo: DEBUG
 
+app:
+  cors:
+    allowed-origins: "*"
+  file-upload:
+    upload-dir: ./uploads
+    allowed-file-types:
+      - jpg
+      - png
+      - gif
+      - jpeg
+      - webp
+    max-file-size: 10485760
+    allowed-file-extensions:
+      - .jpg
+      - .png
+      - .gif
+      - .jpeg
+      - .webp
+
 springdoc:
   api-docs:
     enabled: true                    # 启用 API 文档

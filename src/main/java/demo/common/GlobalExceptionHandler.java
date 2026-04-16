@@ -78,6 +78,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 参数错误（如文件格式不匹配）
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("非法参数: {}", e.getMessage());
+        return Result.fail(BizCode.BAD_REQUEST.getCode(), e.getMessage());
+    }
+
+    /**
      * 404 资源不存在
      */
     @ExceptionHandler(NoResourceFoundException.class)

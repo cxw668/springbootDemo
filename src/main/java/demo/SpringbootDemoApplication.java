@@ -1,11 +1,10 @@
 package demo;
-
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan(basePackages = "demo", annotationClass = org.apache.ibatis.annotations.Mapper.class)
+@MapperScan("demo.mapper")
 public class SpringbootDemoApplication {
 
     // @SpringBootApplication 配置类声明 + 自动装配 + 组件扫描

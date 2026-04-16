@@ -1,6 +1,8 @@
 spring:
   application:
     name: springboot-demo
+  main:
+    allow-bean-definition-overriding: true
   profiles:
     active: dev
   datasource:
@@ -23,13 +25,11 @@ logging:
 # 安全配置
 security:
   auth:
-    # 演示用 token，后续替换为 JWT
     token: demo-token-12345
-    # IP 白名单（取消注释后启用，匹配客户端真实 IP）
-    # ip-whitelist:
-    #   - 127.0.0.1
-    #   - 0:0:0:0:0:0:0:1
-    #   - 192.168.1.100
+    ip-whitelist:
+     - 127.0.0.1
+     - 0:0:0:0:0:0:0:1
+     - 192.168.1.100
 
 springdoc:
   api-docs:
@@ -42,3 +42,29 @@ springdoc:
     operations-sorter: alpha         # 接口按字母排序
     doc-expansion: list              # 默认展开所有接口（none=折叠, list=展开列表, full=完全展开）
   default-flat-param-object: true    # 参数对象扁平化展示
+
+app:
+  version: 1.0.0
+  name: SpringBoot Demo
+  description: 一个用于学习和巩固SpringBoot的项目，后续会持续更新。
+  default-page-size: 10
+  max-page-size: 100
+  cors:
+    max-age: 3600
+    allowed-origins: '*'
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  file-upload:
+    upload-dir: ./uploads/avatars
+    max-file-size: 10485760
+    allowed-file-extensions:
+      - .jpg
+      - .jpeg
+      - .png
+      - .gif
+      - .webp
+    allowed-file-types:
+      - image/jpeg
+      - image/jpg
+      - image/png
+      - image/gif
+      - image/webp

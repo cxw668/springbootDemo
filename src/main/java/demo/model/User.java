@@ -69,6 +69,12 @@ public class User implements Serializable {
     private String phone;
 
     /**
+     * 用户头像
+     */
+    @TableField("avatar")
+    private String avatar;
+
+    /**
      * 创建时间
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)

@@ -3,6 +3,8 @@ package demo.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import demo.common.BizCode;
+import demo.common.BizException;
 import demo.model.User;
 import demo.mapper.UserMapper;
 import demo.service.IUserService;
@@ -20,6 +22,12 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
+    private final FileUploadServiceImpl fileUploadServiceImpl;
+
+    public UserServiceImpl(FileUploadServiceImpl fileUploadServiceImpl) {
+        this.fileUploadServiceImpl = fileUploadServiceImpl;
+    }
+
     public IPage<User> pageQuery(int pageNo, int pageSize, String name, Integer age, String phone, java.time.LocalDateTime start, java.time.LocalDateTime end) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.isNotBlank(name), User::getName, name)
@@ -29,5 +37,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 .orderByDesc(User::getUpdateTime);
 
         return this.page(new Page<>(pageNo, pageSize), wrapper);
+    }
+    @Override
+    public void updateAvatar(Long userId, String avatarPath) {
+        User user = getById(userId);
+        if(user == null) throw new BizException(BizCode.NOT_FOUND_USER);
+        // 删除旧头像
+        if (StringUtils.isNotBlank(user.getAvatar())) {
+            fileUploadServiceImpl.deleteFile(user.getAvatar());
+        }
+        // 更新新头像
+        user.setAvatar(avatarPath);
+        updateById(user);
     }
 }
