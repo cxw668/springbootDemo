@@ -30,3 +30,15 @@ security:
     #   - 127.0.0.1
     #   - 0:0:0:0:0:0:0:1
     #   - 192.168.1.100
+
+springdoc:
+  api-docs:
+    enabled: true                    # 启用 API 文档
+    path: /v3/api-docs               # OpenAPI JSON 路径
+  swagger-ui:
+    enabled: true                    # 启用 Swagger UI
+    path: /swagger-ui.html           # Swagger UI 访问路径
+    tags-sorter: alpha               # 标签按字母排序
+    operations-sorter: alpha         # 接口按字母排序
+    doc-expansion: list              # 默认展开所有接口（none=折叠, list=展开列表, full=完全展开）
+  default-flat-param-object: true    # 参数对象扁平化展示

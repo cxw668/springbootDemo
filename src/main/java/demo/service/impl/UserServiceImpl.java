@@ -3,7 +3,6 @@ package demo.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import demo.common.Phone;
 import demo.model.User;
 import demo.mapper.UserMapper;
 import demo.service.IUserService;

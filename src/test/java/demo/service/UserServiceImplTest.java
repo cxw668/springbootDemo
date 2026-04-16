@@ -22,7 +22,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -64,7 +63,7 @@ class UserServiceImplTest {
     @DisplayName("分页查询测试")
     class PageQueryTests {
 
-        @Testr
+        @Test
         @DisplayName("无条件分页查询 - 返回所有数据")
         void testPageQueryNoConditions() {
             // Arrange
