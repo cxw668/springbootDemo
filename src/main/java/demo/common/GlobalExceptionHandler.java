@@ -1,10 +1,12 @@
 package demo.common;
 
+import demo.ValidationErrorDetail;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -34,15 +37,21 @@ public class GlobalExceptionHandler {
 
     /**
      * 参数校验失败 (@Valid on @RequestBody)
+     * 返回结构化错误详情
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.OK)
-    public Result<Void> handleValidation(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+    public Result<List<ValidationErrorDetail>> handleValidation(MethodArgumentNotValidException e) {
+        List<ValidationErrorDetail> errors = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> new ValidationErrorDetail(err.getField(), err.getDefaultMessage(), err.getRejectedValue()))
+                .collect(Collectors.toList());
+        String message = errors.stream()
+                .map(err -> err.getField() + ": " + err.getMessage())
                 .collect(Collectors.joining("; "));
         log.warn("Validation failed: {}", message);
-        return Result.fail(BizCode.VALIDATION_ERROR.getCode(), message);
+        Result<List<ValidationErrorDetail>> result = Result.fail(BizCode.VALIDATION_ERROR.getCode(), message);
+        result.setData(errors);
+        return result;
     }
 
     /**

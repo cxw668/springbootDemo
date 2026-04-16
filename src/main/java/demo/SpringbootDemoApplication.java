@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @MapperScan(basePackages = "demo", annotationClass = org.apache.ibatis.annotations.Mapper.class)
 public class SpringbootDemoApplication {
 
+    // @SpringBootApplication 配置类声明 + 自动装配 + 组件扫描
     public static void main(String[] args) {
         SpringApplication.run(SpringbootDemoApplication.class, args);
     }

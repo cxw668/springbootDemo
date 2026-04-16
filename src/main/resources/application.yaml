@@ -1,4 +1,8 @@
 spring:
+  application:
+    name: springboot-demo
+  profiles:
+    active: dev
   datasource:
     url: jdbc:mysql://localhost:3306/demo?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
     username: root
@@ -8,3 +12,21 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+
+logging:
+  file:
+    path: logs
+  level:
+    root: INFO
+    demo: INFO
+
+# 安全配置
+security:
+  auth:
+    # 演示用 token，后续替换为 JWT
+    token: demo-token-12345
+    # IP 白名单（取消注释后启用，匹配客户端真实 IP）
+    # ip-whitelist:
+    #   - 127.0.0.1
+    #   - 0:0:0:0:0:0:0:1
+    #   - 192.168.1.100
