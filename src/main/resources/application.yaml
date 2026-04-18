@@ -22,15 +22,6 @@ logging:
     root: INFO
     demo: INFO
 
-# 安全配置
-security:
-  auth:
-    token: demo-token-12345
-    ip-whitelist:
-     - 127.0.0.1
-     - 0:0:0:0:0:0:0:1
-     - 192.168.1.100
-
 springdoc:
   api-docs:
     enabled: true                    # 启用 API 文档

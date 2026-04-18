@@ -1,7 +1,6 @@
 package demo.controller;
 
 import demo.common.AppProperties;
-import demo.common.AuthProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ConfigController {
     private final AppProperties appProperties;
-    private final AuthProperties authProperties;
 
     @Operation(summary = "获取应用配置", description = "返回当前激活的应用配置信息")
     @GetMapping("/app")
@@ -37,9 +35,9 @@ public class ConfigController {
     @GetMapping("/security")
     public Map<String, Object> getSecurityConfig() {
         Map<String, Object> config = new HashMap<>();
-        config.put("tokenConfigured", authProperties.getToken() != null && !authProperties.getToken().isEmpty());
-        config.put("ipWhitelistSize", authProperties.getIpWhitelist().size());
-        config.put("ipWhitelist", authProperties.getIpWhitelist());
+        config.put("authType", "JWT");
+        config.put("ipWhitelistSize", appProperties.getCors().getAllowedOrigins().length());
+        config.put("corsEnabled", true);
         return config;
     }
 

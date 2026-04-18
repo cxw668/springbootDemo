@@ -10,15 +10,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Web MVC 配置
  * 功能：
- * 1. 注册请求日志拦截器和鉴权拦截器
+ * 1. 注册请求日志拦截器
  * 2. 配置全局 CORS 跨域策略
+ * 3. 配置静态资源映射
  */
 @Configuration
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RequestLoggingInterceptor requestLoggingInterceptor;
-    private final SimpleAuthInterceptor simpleAuthInterceptor;
     private final AppProperties appProperties;
 
     @Override
@@ -27,9 +27,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(requestLoggingInterceptor)
                 .addPathPatterns("/**");
 
-        // 鉴权拦截器（排除白名单路径）
-        registry.addInterceptor(simpleAuthInterceptor)
-                .addPathPatterns("/**");
+        // 注意：鉴权已由 Spring Security + JWT Filter 处理，不需要在此添加拦截器
     }
 
     @Override
