@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,8 +46,9 @@ public class FileController {
         return Result.success(result);
     }
 
-    @Operation(summary = "通用文件上传", description = "上传文件到指定目录")
+    @Operation(summary = "通用文件上传", description = "上传文件到指定目录，需要 user:upload 权限")
     @PostMapping("/upload")
+    @PreAuthorize("hasAuthority('user:upload')")
     public Result<Map<String, String>> uploadFile(
             @Parameter(description = "文件") @RequestParam("file") MultipartFile file,
             @Parameter(description = "子目录（可选）") @RequestParam(value = "subDir", required = false) String subDir) {

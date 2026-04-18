@@ -4,6 +4,10 @@ spring:
     username: root
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always  # 每次启动都执行 SQL 初始化
+      schema-locations: classpath:schema.sql  # 指定 schema.sql 位置
 
 mybatis-plus:
   configuration:
@@ -14,6 +18,7 @@ logging:
   file:
     path: logs
   level:
+    org.springframework.boot.autoconfigure: WARN
     root: DEBUG
     demo: DEBUG
 

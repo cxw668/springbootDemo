@@ -32,8 +32,11 @@ import java.util.List;
 @Tag(name = "用户管理", description = "用户的增删改查操作")
 public class UserController {
 
-    @Autowired
-    private UserServiceImpl userService;
+    private final UserServiceImpl userService;
+
+    public UserController(UserServiceImpl userService) {
+        this.userService = userService;
+    }
 
     /**
      * 分页查询用户

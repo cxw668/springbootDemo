@@ -1,6 +1,75 @@
 # 定义环境变量
 @baseUrl = http://127.0.0.1:8080
 @token = 1234567890
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+@userToken = YOUR_USER_TOKEN_HERE
+
+### ==================== 认证接口 ====================
+
+### 1. 用户注册
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser1",
+  "password": "123456",
+  "name": "测试管理员1",
+  "email": "test@example.com",
+  "role": "ADMIN"
+}
+
+### 2. 用户登录
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testadmin",
+  "password": "123456"
+}
+
+### 3. 登出
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### 4. 登录 - 错误密码
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "wrongpassword"
+}
+
+### 5. 登录 - 不存在的用户
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "nonexistent",
+  "password": "123456"
+}
+
+### 6. 注册 - 用户名已存在
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "123456",
+  "name": "重复用户",
+  "email": "duplicate@example.com"
+}
+
+### 7. 注册 - 缺少必填字段
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "incomplete",
+  "password": "123456"
+}
 
 ### ==================== 基础 CRUD ====================
 
@@ -166,3 +235,36 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/user/search?name=ExactMatch
 Authorization: Bearer {{token}}
 
+### ==================== 文件上传权限测试 ====================
+
+### 19. 通用文件上传 - 使用 ADMIN Token（应该成功）
+POST {{baseUrl}}/api/files/upload?subDir=documents
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+Authorization: Bearer {{adminToken}}
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test file.
+--WebAppBoundary--
+
+### 20. 通用文件上传 - 使用 USER Token（应该成功，USER 有 user:upload 权限）
+POST {{baseUrl}}/api/files/upload?subDir=documents
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+Authorization: Bearer {{userToken}}
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test file.
+--WebAppBoundary--
+
+### 21. 删除文件 - 使用 ADMIN Token（应该成功）
+DELETE {{baseUrl}}/api/files/delete?filePath=/uploads/documents/test.txt
+Authorization: Bearer {{adminToken}}
+
+### 22. 删除文件 - 使用 USER Token（应该失败，USER 没有 user:delete 权限）
+DELETE {{baseUrl}}/api/files/delete?filePath=/uploads/documents/test.txt
+Authorization: Bearer {{userToken}}

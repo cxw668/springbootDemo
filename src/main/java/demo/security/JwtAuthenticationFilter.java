@@ -15,7 +15,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * JWT 认证过滤器
@@ -52,15 +54,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = jwtUtil.getUserIdFromToken(token);
                 String role = jwtUtil.getRoleFromToken(token);
 
-                // 4. 构建权限列表（角色需要加 ROLE_ 前缀）
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                // 4. 构建权限列表
+                // - 角色权限：ROLE_USER, ROLE_ADMIN
+                // - 功能权限：user:upload, user:delete 等
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                
+                // 添加角色权限
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                
+                // 根据角色添加功能权限
+                if ("ADMIN".equals(role)) {
+                    // 管理员拥有所有权限
+                    authorities.add(new SimpleGrantedAuthority("user:upload"));
+                    authorities.add(new SimpleGrantedAuthority("user:delete"));
+                    authorities.add(new SimpleGrantedAuthority("user:view"));
+                } else if ("USER".equals(role)) {
+                    // 普通用户只有上传权限
+                    authorities.add(new SimpleGrantedAuthority("user:upload"));
+                    authorities.add(new SimpleGrantedAuthority("user:view"));
+                }
 
                 // 5. 创建认证对象
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(
                         username,
                         null, // 凭证设为 null，因为已经通过 JWT 验证
-                        Collections.singletonList(authority)
+                        authorities
                     );
 
                 // 6. 设置请求详情

@@ -18,7 +18,9 @@ public enum BizCode {
     CONFLICT(409, "数据冲突"),
     VALIDATION_ERROR(422, "参数校验失败"),
     INTERNAL_ERROR(500, "服务器内部错误"),
-    NOT_FOUND_USER(404, "用户不存在" );
+    NOT_FOUND_USER(404, "用户不存在"),
+    USER_ALREADY_EXISTS(409, "用户名已存在"),
+    INVALID_CREDENTIALS(401, "用户名或密码错误");
 
     private final int code;
     private final String message;

@@ -53,6 +53,33 @@ public class User implements Serializable {
     private String name;
 
     /**
+     * 用户名（登录用）
+     */
+    @TableField("username")
+    @NotBlank(message = "用户名不能为空", groups = CreateGroup.class)
+    @Size(min = 3, max = 50, message = "用户名长度必须在3-50之间", groups = CreateGroup.class)
+    private String username;
+
+    /**
+     * 密码（加密存储）
+     */
+    @TableField("password")
+    @NotBlank(message = "密码不能为空", groups = CreateGroup.class)
+    private String password;
+
+    /**
+     * 邮箱
+     */
+    @TableField("email")
+    private String email;
+
+    /**
+     * 用户角色：USER, ADMIN
+     */
+    @TableField("role")
+    private String role;
+
+    /**
      * 年龄
      */
     @TableField("age")
@@ -65,7 +92,7 @@ public class User implements Serializable {
      * 手机号
      */
     @TableField("phone")
-    @Phone(message = "手机号格式不正确", groups = CreateGroup.class)
+    @Phone(groups = CreateGroup.class)
     private String phone;
 
     /**
