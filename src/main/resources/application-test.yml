@@ -6,12 +6,21 @@ spring:
     driver-class-name: org.h2.Driver
   cache:
     type: simple
+  rabbitmq:
+    dynamic: false
+    listener:
+      simple:
+        auto-startup: false
+      direct:
+        auto-startup: false
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
 app:
+  messaging:
+    enabled: false
   default-page-size: 5
   max-page-size: 50
   cors:

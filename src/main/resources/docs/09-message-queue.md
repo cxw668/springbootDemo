@@ -14,6 +14,17 @@
 
 ---
 
+## 项目消息队列工作流程
+
+触发：业务代码（如注册成功）调用 DomainEventPublisher.publish(event)。
+路由：RabbitMqDomainEventPublisher 根据事件类型找到对应的 Exchange 和 Routing Key。
+传输：消息进入 RabbitMQ 队列（配置了 DLQ 死信队列以防丢失）。
+消费：listener 监听到消息。
+去重：调用 MessageDedupService.tryStartProcessing() 检查 Redis。
+执行：如果未处理过，则执行后续逻辑；否则直接丢弃。
+
+---
+
 ## 🎯 核心知识点
 
 ### 1. 为什么需要消息队列
@@ -81,6 +92,86 @@
 
 ---
 
+## 🧩 本次实践做了什么
+
+这次在当前项目里实际落了两条事件链路：
+
+| 事件 | 触发位置 | 异步处理内容 |
+|------|----------|--------------|
+| `user.registered` | `AuthController#register` | 欢迎通知、注册审计日志 |
+| `file.uploaded` | `FileController#uploadAvatar` / `uploadFile` | 文件元数据提取、缩略图/后处理任务 |
+
+同时补了 4 个工程化能力：
+
+1. **Topic Exchange + 业务 Routing Key**
+2. **DLQ（死信队列）**
+3. **Redis 幂等去重**
+4. **测试环境关闭 MQ，避免依赖外部 Broker**
+
+---
+
+## 🧩 实现结构
+
+### 1. 生产者
+
+当前项目新增了 `DomainEventPublisher` 抽象：
+
+- `RabbitMqDomainEventPublisher`：MQ 开启时，真正发布事件
+- `NoOpDomainEventPublisher`：MQ 未开启时，安全降级，不影响主流程
+
+这样控制器不需要直接依赖 `RabbitTemplate`，业务层和消息基础设施是解耦的。
+
+### 2. 交换机与队列
+
+本次实践使用：
+
+| 类型 | 名称 | 用途 |
+|------|------|------|
+| Topic Exchange | `app.event.exchange` | 业务事件主交换机 |
+| Direct Exchange | `app.event.dlx` | 死信交换机 |
+| Queue | `user.registered.queue` | 用户注册事件消费 |
+| Queue | `file.uploaded.queue` | 文件上传事件消费 |
+| Queue | `user.registered.dlq` | 注册事件死信队列 |
+| Queue | `file.uploaded.dlq` | 文件上传死信队列 |
+
+对应路由键：
+
+```text
+user.registered
+file.uploaded
+user.registered.dlq
+file.uploaded.dlq
+```
+
+### 3. 消费者
+
+当前项目新增两个监听器：
+
+| 监听器 | 主队列 | 作用 |
+|--------|--------|------|
+| `UserRegisteredEventListener` | `user.registered.queue` | 异步欢迎通知 + 审计日志 |
+| `FileUploadedEventListener` | `file.uploaded.queue` | 异步文件后处理 |
+
+每个监听器都额外监听对应的 DLQ，用于记录失败消息。
+
+### 4. 幂等去重
+
+本次直接结合前面已经接入的 Redis，实现了简单但实用的幂等消费：
+
+```text
+mq:processed:{eventId}
+```
+
+消费者第一次处理消息时：
+
+1. 先写入一个 `PROCESSING` 状态
+2. 处理成功后改成 `DONE`
+3. 处理失败则清理处理标记，允许 Broker 重投
+
+这适合当前学习项目，也贴近生产里常见的“全局唯一消息 ID + 幂等键”方案。
+
+---
+
 ## 🧩 实践步骤
 
 ### 步骤 1：引入依赖
@@ -97,114 +188,272 @@
 ```yaml
 spring:
   rabbitmq:
-    host: 127.0.0.1
-    port: 5672
-    username: guest
-    password: guest
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+```
+
+同时在项目里通过配置开关控制是否启用 MQ：
+
+```yaml
+app:
+  messaging:
+    enabled: true
 ```
 
 ### 步骤 3：声明交换机与队列
 
 ```java
-@Bean
-public DirectExchange userExchange() {
-    return new DirectExchange("user.exchange");
-}
-
-@Bean
-public Queue userRegisterQueue() {
-    return new Queue("user.register.queue");
-}
-
-@Bean
-public Binding registerBinding() {
-    return BindingBuilder.bind(userRegisterQueue())
-            .to(userExchange())
-            .with("user.register");
-}
+QueueBuilder.durable("user.registered.queue")
+        .deadLetterExchange("app.event.dlx")
+        .deadLetterRoutingKey("user.registered.dlq")
+        .build();
 ```
+
+这里的关键不是“声明一个队列”，而是**从一开始就把 DLQ 配上**，避免失败消息反复重试造成毒性循环。
 
 ### 步骤 4：发送消息
 
 ```java
 rabbitTemplate.convertAndSend(
-        "user.exchange",
-        "user.register",
-        new UserRegisterMessage(userId, username)
+        "app.event.exchange",
+        "user.registered",
+        event
 );
 ```
 
 ### 步骤 5：消费消息
 
 ```java
-@RabbitListener(queues = "user.register.queue")
-public void handleRegister(UserRegisterMessage message) {
-    log.info("处理注册后任务: {}", message);
+@RabbitListener(queues = "user.registered.queue")
+public void handleUserRegistered(UserRegisteredEvent event) {
+    if (messageDedupService.isProcessed(event.getEventId())) {
+        log.warn("重复消息，跳过: {}", event.getEventId());
+        return;
+    }
+    if (!messageDedupService.tryStartProcessing(event.getEventId())) {
+        return;
+    }
+    log.info("异步发送欢迎通知: {}", event.getUsername());
+    messageDedupService.markProcessed(event.getEventId());
 }
 ```
 
 ---
 
-## 🛡️ 可靠性设计
+## 🛡️ 应用场景怎么映射到当前项目
 
-### 1. 消息确认
+| 场景 | 当前项目可落地方式 |
+|------|------------------|
+| 异步任务（邮件、图片/视频处理） | 注册后欢迎通知；文件上传后生成缩略图/提取元数据 |
+| 削峰填谷（缓冲高峰流量） | 高峰期把注册后续动作、文件后处理放入队列 |
+| 微服务解耦与事件驱动 | User 模块发布事件，通知/审计/文件处理模块独立消费 |
+| 实时流/日志采集与分析 | 当前项目文档中推荐后续升级到 Kafka |
+| 分布式任务队列/调度 | 导出报表、批量同步任务可由消费者异步执行 |
+| 延迟/定时任务（delay queue） | 过期清理、延后通知、超时自动取消等后续扩展 |
 
-- 生产者确认：消息是否成功到达 Broker
-- 消费者确认：消息是否成功处理完成
+---
 
-### 2. 重试机制
+## 🛡️ 常见问题场景与解决方案
 
-消费失败时不要无限重试，建议：
+### 1. 消息丢失
 
-1. 有限次数重试
-2. 重试失败后转入死信队列
-3. 人工排查死信
+**问题来源：**
 
-### 3. 幂等性
+1. 生产者发送失败
+2. Broker 未持久化
+3. 消费前节点异常
 
-同一条消息可能被重复消费，消费者应保证幂等。
+**解决方案：**
 
-常见做法：
+- 队列/交换机/消息持久化
+- 生产者确认（publisher confirm）
+- 多副本/镜像队列
+- 必要时记录业务发送日志，做补发
 
-- 基于业务唯一键判重
-- 基于消息 ID 记录处理状态
+### 2. 重复消费
+
+**问题来源：** 网络重试、消费者重启、Broker 重投递。
+
+**解决方案：**
+
+- 幂等消费
+- 去重表 / Redis 幂等键
+- 使用全局唯一消息 ID
+
+本次项目已经落了 Redis 去重。
+
+### 3. 顺序保证
+
+**问题来源：** 多消费者并发时，同一业务键消息顺序可能乱掉。
+
+**解决方案：**
+
+- 按业务键分区 / 分路由
+- 同一业务键单线程消费
+- 或增加序号校验
+
+RabbitMQ 不擅长大规模全局有序，通常只保证“单队列 + 单消费者”级别的顺序。
+
+### 4. 毒性消息
+
+**问题来源：** 某条消息无论重试多少次都会失败。
+
+**解决方案：**
+
+- 死信队列（DLQ）
+- 人工排查
+- 自动降级或补偿处理
+
+本次项目已经给两个主队列都配置了 DLQ。
+
+### 5. 背压 / 延迟升高
+
+**问题来源：** 生产速度大于消费速度。
+
+**解决方案：**
+
+- 限流
+- 批处理
+- 消费者扩容
+- 调整 prefetch 和并发
+- 拆分热点队列
+
+### 6. 事务与一致性
+
+**问题来源：** 数据库成功了，消息没发出去；或者消息发出去了，业务没落库。
+
+**解决方案：**
+
+- 端到端幂等
+- 补偿事务
+- Outbox 模式
+- Kafka Transactions（特定场景）
+
+当前项目是学习型实现，先从“主业务成功后发布事件 + 消费端幂等”入手最合适。
+
+### 7. 可观测性
+
+**问题来源：** 消息卡住、堆积、失败时不容易定位。
+
+**解决方案：**
+
+- 指标
+- 结构化日志
+- 链路追踪
+- 告警
+
+当前项目里至少要关注：
+
+1. 队列积压数
+2. 消费失败数
+3. DLQ 消息数量
+4. 事件 ID 对应的完整处理日志
+
+---
+
+## 🧪 如何手动验证
+
+### 1. 验证注册事件
+
+调用 `/auth/register` 后，观察日志是否出现：
+
+```text
+已发布 user.registered 事件
+异步发送欢迎通知
+异步记录注册审计日志
+```
+
+### 2. 验证文件上传事件
+
+调用 `/api/files/upload` 或 `/api/files/avatar` 后，观察日志是否出现：
+
+```text
+已发布 file.uploaded 事件
+异步处理文件上传事件
+执行后处理任务: 提取元数据 / 生成缩略图 / 调用后续处理流水线
+```
+
+### 3. 验证死信队列
+
+为了便于本地演示，项目里留了两个显式的失败入口：
+
+1. 注册用户名以 `fail-mq-` 开头，触发 `user.registered` 消费失败
+2. 上传文件时把 `subDir=simulate-fail`，触发 `file.uploaded` 消费失败
+
+失败后应能看到对应 DLQ 日志。
 
 ---
 
 ## 🧪 建议练习
 
-1. 用户创建成功后发送一条“注册成功”消息
-2. 消费者异步记录一条操作日志
-3. 模拟消费者异常，观察是否会重复消费
-4. 增加死信队列，用于保存处理失败的消息
+1. 给注册事件接入真实邮件服务
+2. 给文件上传事件接入图片缩略图生成
+3. 增加消费者失败告警
+4. 为消息发布和消费增加监控指标
 
 ---
 
-## ⚠️ 常见问题
+## 🚀 后续支持更大数据量时怎么选
 
-### 1. 消息发出去了但消费者收不到
+当系统从“业务异步”升级到“大吞吐流式数据”时，RabbitMQ 往往不是终点。
 
-优先检查：
+### 1. RabbitMQ 适合什么阶段
 
-1. Exchange、Queue、Binding 是否一致
-2. Routing Key 是否匹配
-3. 消费者监听的队列名是否正确
+- 中小规模业务事件
+- 接口异步化
+- 延迟队列 / 死信 / 任务编排
+- 对消息路由灵活性要求高
 
-### 2. 消息重复消费
+### 2. Kafka 适合什么阶段
 
-不要假设 MQ “只会投递一次”，而要让消费者做到“重复处理也安全”。
+- 海量日志采集
+- 实时流处理
+- 埋点、行为流、监控数据
+- 高吞吐、可回放、多消费者组
 
-### 3. 把 MQ 当事务总线
+### 3. 如果继续扩大规模，还可以看哪些选项
 
-MQ 适合最终一致性和异步处理，不适合代替本地事务。
+| 方案 | 优势 | 更适合的场景 |
+|------|------|--------------|
+| RabbitMQ | 路由灵活、DLQ/延迟队列成熟、业务异步友好 | 业务通知、任务编排、订单/用户事件 |
+| Kafka | 吞吐高、可回放、生态成熟 | 日志流、埋点流、实时分析 |
+| RocketMQ | 顺序消息、事务消息能力强 | 交易链路、金融/电商业务事件 |
+| Pulsar | 存算分离、租户隔离能力强 | 更复杂的多租户事件平台、云原生消息平台 |
+
+### 4. 选型建议
+
+| 业务特征 | 推荐 |
+|----------|------|
+| 用户注册、订单通知、文件后处理 | RabbitMQ |
+| 日志流、行为流、IoT 数据流 | Kafka |
+| 海量可回放事件流 | Kafka |
+| 强事务消息、业务顺序要求高 | RocketMQ |
+| 强路由、灵活 DLQ、延迟任务 | RabbitMQ |
+
+### 5. 当前项目的演进路线
+
+推荐按这个顺序走：
+
+1. **现在**：RabbitMQ 做业务事件异步化
+2. **下一步**：加监控、告警、消费者并发和失败补偿
+3. **数据量更大时**：把日志采集、行为事件流拆到 Kafka
+4. **事务/顺序要求变强时**：评估 RocketMQ
+5. **再往后**：RabbitMQ 保留业务通知，Kafka 或 RocketMQ 承接高吞吐主链路
+
+这也是很多企业项目的常见组合：**RabbitMQ 处理业务任务，Kafka 处理数据流平台能力**；如果交易链路需要更强事务消息能力，再补充 RocketMQ。
 
 ---
 
 ## 📝 学习总结
 
-- MQ 的核心价值是解耦与异步，而不是“让架构更高级”
-- RabbitMQ 更适合当前项目做业务通知、文件后处理、审计日志等场景
-- 真正难点不在发消息，而在**可靠性、幂等性、失败补偿**
+- MQ 的核心价值是解耦、异步、削峰和事件驱动
+- 当前项目最合适的 RabbitMQ 落地点是“注册事件 + 文件上传后处理”
+- 真正的工程难点始终是：**丢失、重复、顺序、毒性消息、积压和可观测性**
+- 当系统进入更高吞吐阶段，RabbitMQ 和 Kafka 往往不是二选一，而是分工协作
 
 ---
 

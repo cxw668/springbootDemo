@@ -4,11 +4,11 @@ import demo.common.BizCode;
 import demo.common.BizException;
 import demo.common.Result;
 import demo.config.JwtProperties;
+import demo.messaging.DomainEventPublisher;
 import demo.model.User;
 import demo.security.JwtUtil;
 import demo.service.IUserService;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,13 +31,16 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final IUserService userService;
     private final JwtProperties jwtProperties;
+    private final DomainEventPublisher domainEventPublisher;
 
     public AuthController(JwtUtil jwtUtil, PasswordEncoder passwordEncoder, 
-                         IUserService userService, JwtProperties jwtProperties) {
+                         IUserService userService, JwtProperties jwtProperties,
+                         DomainEventPublisher domainEventPublisher) {
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
         this.userService = userService;
         this.jwtProperties = jwtProperties;
+        this.domainEventPublisher = domainEventPublisher;
     }
 
     /**
@@ -100,6 +103,7 @@ public class AuthController {
         
         // 3. 注册用户（Service 层会加密密码并保存）
         User registeredUser = userService.register(user);
+        domainEventPublisher.publishUserRegistered(registeredUser);
         
         // 4. 构建响应（不包含敏感信息）
         Map<String, Object> data = new HashMap<>();

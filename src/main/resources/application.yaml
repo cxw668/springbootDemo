@@ -20,6 +20,19 @@ spring:
     redis:
       cache-null-values: false
       key-prefix: "springboot-demo:"
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        default-requeue-rejected: false # 被拒绝的消息不重回队列，而是进入 DLQ（死信队列）
+        prefetch: 10
 
 mybatis-plus:
   configuration:
@@ -54,6 +67,8 @@ app:
     max-age: 3600
     allowed-origins: '*'
     allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  messaging:
+    enabled: true
   file-upload:
     upload-dir: ./uploads/avatars
     max-file-size: 10485760

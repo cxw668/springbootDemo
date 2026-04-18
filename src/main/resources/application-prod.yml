@@ -27,6 +27,8 @@ logging:
     demo: INFO
 
 app:
+  messaging:
+    enabled: true
   cors:
     allowed-origins: https://youdomain.com
     allowed-methods: GET,POST

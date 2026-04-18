@@ -1,6 +1,7 @@
 package demo.controller;
 
 import demo.common.Result;
+import demo.messaging.DomainEventPublisher;
 import demo.service.IFileUploadService;
 import demo.service.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,11 +21,14 @@ import java.util.Map;
 public class FileController {
     private final IFileUploadService fileUploadService;
     private final IUserService userService;
+    private final DomainEventPublisher domainEventPublisher;
 
     public FileController(@Qualifier("fileUploadServiceImpl") IFileUploadService fileUploadService,
-                          @Qualifier("userServiceImpl") IUserService userService) {
+                          @Qualifier("userServiceImpl") IUserService userService,
+                          DomainEventPublisher domainEventPublisher) {
         this.fileUploadService = fileUploadService;
         this.userService = userService;
+        this.domainEventPublisher = domainEventPublisher;
     }
     @Operation(summary = "上传用户头像", description = "支持 jpg、png、gif、webp 格式，最大 10MB")
     @PostMapping("/avatar")
@@ -37,6 +41,7 @@ public class FileController {
 
         // 2. 更新用户头像
         userService.updateAvatar(userId, avatarPath);
+        domainEventPublisher.publishFileUploaded(userId, "avatars", avatarPath, file);
 
         // 3. 返回结果
         Map<String, String> result = new HashMap<>();
@@ -54,6 +59,7 @@ public class FileController {
             @Parameter(description = "子目录（可选）") @RequestParam(value = "subDir", required = false) String subDir) {
 
         String filePath = fileUploadService.uploadFile(file, subDir);
+        domainEventPublisher.publishFileUploaded(null, subDir, filePath, file);
 
         Map<String, String> result = new HashMap<>();
         result.put("filePath", filePath);

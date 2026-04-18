@@ -10,7 +10,7 @@ Content-Type: image/png
 --boundary123
 Content-Disposition: form-data; name="userId"
 
-2044095203160424450
+1
 --boundary123--
 
 ### 通用文件上传

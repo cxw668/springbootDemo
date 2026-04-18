@@ -51,4 +51,9 @@ public class AppProperties {
         // 文件扩展名
         private String[] allowedFileExtensions = new String[]{".jpg", ".jpeg", ".png", ".gif", ".webp"};
     }
+
+    @Data
+    public static class Messaging {
+        private Boolean enabled = false;
+    }
 }

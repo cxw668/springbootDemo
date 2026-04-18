@@ -14,12 +14,6 @@ spring:
     redis:
       cache-null-values: false
       key-prefix: "springboot-demo:"
-  spring:
-    rabbitmq:
-      host: localhost
-      port: 5672
-      username: guest
-      password: guest
 
 #  sql:
 #    init:
@@ -40,6 +34,8 @@ logging:
     demo: DEBUG
 
 app:
+  messaging:
+    enabled: true
   cors:
     allowed-origins: "*"
   file-upload:
