@@ -1,5 +1,7 @@
 package demo.security;
 
+import demo.model.User;
+import demo.service.IUserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +18,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,9 +35,11 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final IUserService userService;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, IUserService userService) {
         this.jwtUtil = jwtUtil;
+        this.userService = userService;
     }
 
     @Override
@@ -52,7 +55,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 3. 从 Token 中提取用户信息
                 String username = jwtUtil.getUsernameFromToken(token);
                 Long userId = jwtUtil.getUserIdFromToken(token);
-                String role = jwtUtil.getRoleFromToken(token);
+                User user = userService.findByUsername(username);
+
+                if (user == null || user.getId() == null || !user.getId().equals(userId)) {
+                    log.warn("JWT 对应用户不存在或身份不匹配: username={}, userId={}", username, userId);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                String role = StringUtils.hasText(user.getRole()) ? user.getRole() : "USER";
 
                 // 4. 构建权限列表
                 // - 角色权限：ROLE_USER, ROLE_ADMIN

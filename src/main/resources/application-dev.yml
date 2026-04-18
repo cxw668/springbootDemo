@@ -4,6 +4,16 @@ spring:
     username: root
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      timeout: 3s
+  cache:
+    type: redis
+    redis:
+      cache-null-values: false
+      key-prefix: "springboot-demo:"
 #  sql:
 #    init:
 #      mode: always  # 每次启动都执行 SQL 初始化

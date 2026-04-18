@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import demo.common.BizCode;
 import demo.common.BizException;
+import demo.config.CacheConfig;
 import demo.model.User;
 import demo.mapper.UserMapper;
 import demo.service.IUserService;
@@ -12,9 +13,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.Serializable;
 
 /**
  * <p>
@@ -31,6 +37,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private final FileUploadServiceImpl fileUploadServiceImpl;
     private final PasswordEncoder passwordEncoder;
 
+    @Override
+    @Cacheable(cacheNames = CacheConfig.USER_BY_ID_CACHE, key = "#id", unless = "#result == null")
+    public User getById(Serializable id) {
+        return super.getById(id);
+    }
+
     public IPage<User> pageQuery(int pageNo, int pageSize, String name, Integer age, String phone, java.time.LocalDateTime start, java.time.LocalDateTime end) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.isNotBlank(name), User::getName, name)
@@ -41,7 +53,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         return this.page(new Page<>(pageNo, pageSize), wrapper);
     }
+
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_ID_CACHE, key = "#userId"),
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_USERNAME_CACHE, allEntries = true)
+    })
     public void updateAvatar(Long userId, String avatarPath) {
         User user = getById(userId);
         if(user == null) throw new BizException(BizCode.NOT_FOUND_USER);
@@ -55,6 +72,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     @Override
+    @Cacheable(cacheNames = CacheConfig.USER_BY_USERNAME_CACHE, key = "#username", unless = "#result == null")
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, username);
@@ -70,6 +88,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = CacheConfig.USER_BY_ID_CACHE,
+                    key = "#user.id",
+                    condition = "#user != null && #user.id != null"),
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_USERNAME_CACHE, allEntries = true)
+    })
     public User register(User user) {
         // 1. 检查用户名是否已存在
         if (existsByUsername(user.getUsername())) {
@@ -99,5 +124,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         result.setCreateTime(user.getCreateTime());
         
         return result;
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = CacheConfig.USER_BY_ID_CACHE,
+                    key = "#entity.id",
+                    condition = "#entity != null && #entity.id != null"),
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_USERNAME_CACHE, allEntries = true)
+    })
+    public boolean save(User entity) {
+        return super.save(entity);
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = CacheConfig.USER_BY_ID_CACHE,
+                    key = "#entity.id",
+                    condition = "#entity != null && #entity.id != null"),
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_USERNAME_CACHE, allEntries = true)
+    })
+    public boolean updateById(User entity) {
+        return super.updateById(entity);
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_ID_CACHE, key = "#id"),
+            @CacheEvict(cacheNames = CacheConfig.USER_BY_USERNAME_CACHE, allEntries = true)
+    })
+    public boolean removeById(Serializable id) {
+        return super.removeById(id);
     }
 }
