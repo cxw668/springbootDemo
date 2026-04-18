@@ -1,3 +1,4 @@
+
 package demo.service.impl;
 
 import demo.common.AppProperties;
@@ -133,58 +134,55 @@ public class FileUploadServiceImpl implements IFileUploadService {
     }
 
     /**
-     * 获取文件扩展名
+     * 获取文件扩展名(带点)
      */
     private String getFileExtension(String filename) {
-        if (StringUtils.isBlank(filename)) {
-            return "";
-        }
-        int lastDotIndex = filename.lastIndexOf(".");
-        return lastDotIndex > 0 ? filename.substring(lastDotIndex) : "";
+        String fileType = getFileType(filename);
+        return StringUtils.isNotBlank(fileType) ? "." + fileType : "";
     }
-
+    
     /**
-     * 获取文件类型（不带点）
+     * 获取文件类型(不带点)
      */
     private String getFileType(String filename) {
         if (StringUtils.isBlank(filename)) {
             return "";
         }
         int lastDotIndex = filename.lastIndexOf(".");
-        return lastDotIndex > 0 ? filename.substring(lastDotIndex + 1) : "";
+        return lastDotIndex > 0 && lastDotIndex < filename.length() - 1 ? filename.substring(lastDotIndex + 1) : "";
     }
     
     /**
-     * 检测文件的真实格式（基于文件头）
+     * 检测文件的真实格式(基于文件头)
      */
     private String detectActualFormat(byte[] bytes) {
         if (bytes == null || bytes.length < 4) {
-            return "未知";
+            return "未知格式";
         }
-        
+            
+        // JPEG: FF D8 FF (只需3字节,优先检测)
+        if (bytes[0] == (byte)0xFF && bytes[1] == (byte)0xD8 && bytes[2] == (byte)0xFF) {
+            return "JPEG";
+        }
+            
         // PNG: 89 50 4E 47
         if (bytes[0] == (byte)0x89 && bytes[1] == (byte)0x50 && 
             bytes[2] == (byte)0x4E && bytes[3] == (byte)0x47) {
             return "PNG";
         }
-        
-        // JPEG: FF D8 FF
-        if (bytes[0] == (byte)0xFF && bytes[1] == (byte)0xD8 && bytes[2] == (byte)0xFF) {
-            return "JPEG";
-        }
-        
-        // GIF: 47 49 46 38
+            
+        // GIF: 47 49 46 38 (GIF8)
         if (bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == '8') {
             return "GIF";
         }
-        
-        // WebP: RIFF....WEBP
+            
+        // WebP: RIFF....WEBP (需要至少12字节)
         if (bytes.length >= 12 && bytes[0] == 'R' && bytes[1] == 'I' && 
             bytes[2] == 'F' && bytes[3] == 'F' &&
             bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
             return "WebP";
         }
-        
+            
         return "未知格式";
     }
     

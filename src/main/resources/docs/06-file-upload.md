@@ -454,6 +454,7 @@ Content-Type: image/jpeg
 --boundary123
 Content-Disposition: form-data; name="userId"
 
+1
 --boundary123--
 
 ### 通用文件上传
