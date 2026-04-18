@@ -32,3 +32,13 @@ security:
     ip-whitelist:
       - 127.0.0.1
       - 192.168.1.1
+
+# JWT 配置（生产环境）
+jwt:
+  # ⚠️ 重要：生产环境必须使用环境变量设置强密钥
+  # 生成强密钥命令：openssl rand -base64 64
+  # Linux/Mac: export JWT_SECRET="your-complex-secret-key-here"
+  # Windows: set JWT_SECRET="your-complex-secret-key-here"
+  secret: ${JWT_SECRET:CHANGE_THIS_TO_A_VERY_LONG_RANDOM_STRING_AT_LEAST_32_CHARS}
+  # Token 过期时间（毫秒），生产环境建议缩短为 1 小时
+  expiration: 3600000

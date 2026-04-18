@@ -14,3 +14,10 @@ app:
   max-page-size: 50
   cors:
     allowed-origins: "*"
+
+# JWT 配置（测试环境）
+jwt:
+  # 测试环境可以使用简单密钥
+  secret: test-secret-key-for-jwt-testing-purpose-only
+  # Token 过期时间设置为 2 小时，方便测试
+  expiration: 7200000
