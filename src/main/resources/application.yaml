@@ -84,6 +84,10 @@ app:
       - image/png
       - image/gif
       - image/webp
+  job:
+    user-stats-cron: "0 0 8 * * ?"  # 每天早上8点统计用户数据
+    file-cleanup-cron: "0 0 2 * * ?"  # 每天凌晨2点清理过期文件
+    file-retention-days: 7  # 文件保留天数
 
 # JWT 配置
 jwt:

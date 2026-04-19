@@ -33,6 +33,8 @@ public class AppProperties {
 
     private FileUpload fileUpload = new FileUpload();
 
+    private Job job = new Job();
+
     @Data
     public static class Cors {
         private String allowedOrigins = "*";
@@ -55,5 +57,15 @@ public class AppProperties {
     @Data
     public static class Messaging {
         private Boolean enabled = false;
+    }
+
+    @Data
+    public static class Job {
+        // 用户统计任务 Cron 表达式
+        private String userStatsCron = "0 0 8 * * ?";
+        // 文件清理任务 Cron 表达式
+        private String fileCleanupCron = "0 0 2 * * ?";
+        // 文件保留天数
+        private Integer fileRetentionDays = 7;
     }
 }

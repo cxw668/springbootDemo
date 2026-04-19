@@ -14,14 +14,35 @@
 
 ---
 
+## 目标解析
+
+1. 解耦、削峰、异步
+
+   * 解耦 (Decoupling)：生产者不需要知道消费者是谁，也不需要等待消费者处理完成。例如：用户注册成功后，直接发布一个“注册事件”，至于后续是发邮件、送积分还是记日志，由不同的消费者独立处理。
+   * 削峰 (Peak Shaving)：在流量洪峰到来时（如秒杀），MQ **可以作为缓冲区暂存请求**，让消费者按照自己的处理能力慢慢消化，防止数据库被瞬间打挂。
+   * 异步处理 (Asynchronous)：将非核心逻辑（如发送通知）移出主线程，显著缩短接口响应时间，提升用户体验。
+
+2. RabbitMQ 核心模型
+   - Producer (生产者)：创建并发送消息的程序。
+   - Exchange (交换机)：接收生产者的消息，并根据路由规则决定把消息投递到哪个队列。常见的类型有 Direct（精确匹配）、Topic（模糊匹配）、Fanout（广播）。
+   - Queue (队列)：存储消息的容器，直到消费者将其取走。
+   - Binding (绑定)：连接 Exchange 和 Queue 的规则，通常包含一个 Routing Key。
+   - Consumer (消费者)：监听队列并处理消息的程序。
+
+3. 可靠性机制：确保消息不丢、不错
+   - 消息确认 (Ack)：消费者处理完消息后必须给 Broker 发送确认信号。如果没发 Ack 就断开了，Broker 会把消息重新投递给其他消费者。
+   - 持久化 (Persistence)：将交换机、队列和消息保存到磁盘。即使服务器重启，消息也不会丢失。
+   - 死信队列 (DLQ)：当消息处理失败次数超过限制，或者消息过期时，会被自动转发到 DLQ。这能防止某条“有毒”消息导致消费者无限重试卡死。
+---
+
 ## 项目消息队列工作流程
 
-触发：业务代码（如注册成功）调用 DomainEventPublisher.publish(event)。
-路由：RabbitMqDomainEventPublisher 根据事件类型找到对应的 Exchange 和 Routing Key。
-传输：消息进入 RabbitMQ 队列（配置了 DLQ 死信队列以防丢失）。
-消费：listener 监听到消息。
-去重：调用 MessageDedupService.tryStartProcessing() 检查 Redis。
-执行：如果未处理过，则执行后续逻辑；否则直接丢弃。
+1. 触发：业务代码（如注册成功）调用 DomainEventPublisher.publish(event)。
+2. 路由：RabbitMqDomainEventPublisher 根据事件类型找到对应的 Exchange 和 Routing Key。
+3. 传输：消息进入 RabbitMQ 队列（配置了 DLQ 死信队列以防丢失）。
+4. 消费：listener 监听到消息。
+5. 去重：调用 MessageDedupService.tryStartProcessing() 检查 Redis。
+6. 执行：如果未处理过，则执行后续逻辑；否则直接丢弃。
 
 ---
 
