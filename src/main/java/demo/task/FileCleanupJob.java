@@ -92,28 +92,34 @@ public class FileCleanupJob {
                 }
             } else {
                 try {
-                    // 检查文件最后修改时间
-                    LocalDateTime fileModifiedTime = LocalDateTime.ofInstant(
-                            java.nio.file.Files.readAttributes(file.toPath(), java.nio.file.attribute.BasicFileAttributes.class)
-                                    .lastModifiedTime().toInstant(),
-                            java.time.ZoneId.systemDefault()
-                    );
+                    // 检查文件最后修改时间（使用时间戳比较，性能更优且避免时区问题）
+                    long fileLastModified = file.lastModified();
+                    long cutoffTimestamp = LocalDateTime.now()
+                            .minusDays(cutoffTime.getDayOfMonth())
+                            .minusHours(cutoffTime.getHour())
+                            .minusMinutes(cutoffTime.getMinute())
+                            .minusSeconds(cutoffTime.getSecond())
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli();
                     
-                    if (fileModifiedTime.isBefore(cutoffTime)) {
+                    if (fileLastModified < cutoffTimestamp) {
                         long fileSize = file.length();
                         if (file.delete()) {
                             deletedCount[0]++;
                             deletedSize[0] += fileSize;
                             log.debug("删除过期文件: {} (修改时间: {}, 大小: {} bytes)", 
                                     file.getName(), 
-                                    fileModifiedTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                                    new java.util.Date(fileLastModified),
                                     fileSize);
                         } else {
                             log.warn("删除文件失败: {}", file.getAbsolutePath());
                         }
                     }
+                } catch (SecurityException e) {
+                    log.warn("无权限访问文件，跳过: {}, 错误: {}", file.getAbsolutePath(), e.getMessage());
                 } catch (Exception e) {
-                    log.warn("读取文件属性失败: {}, 错误: {}", file.getAbsolutePath(), e.getMessage());
+                    log.warn("处理文件时发生异常，跳过: {}, 错误: {}", file.getAbsolutePath(), e.getMessage());
                 }
             }
         }
