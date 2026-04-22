@@ -11,18 +11,26 @@ spring:
       timeout: 3s
       database: 0
   cache:
-    type: redis
-    redis:
-      cache-null-values: false
-      key-prefix: "springboot-demo:"
+    type: none  # 完全禁用缓存
+#    redis:
+#      cache-null-values: false
+#      key-prefix: "springboot-demo:"
+  rabbitmq:
+    enabled: false  # 开发阶段禁用消息队列
+    dynamic: false
+    listener:
+      simple:
+        auto-startup: false  # 不自动启动消费者
+      direct:
+        auto-startup: false
   ai:
-    open:
+    openai:
       api-key: ${SILICONFLOW_API_KEY:not-configured}
       base-url: ${SILICONFLOW_BASE_URL:https://api.siliconflow.cn}
       chat:
         options:
           model: ${SILICONFLOW_CHAT_MODEL:Qwen/Qwen3.5-4B}
-          temperature: ${SILICON_TEMPERATURE:0.7}
+          temperature: ${SILICONFLOW_TEMPERATURE:0.7}
 
 #  sql:
 #    init:
@@ -44,7 +52,7 @@ logging:
 
 app:
   messaging:
-    enabled: true
+    enabled: false  # 开发阶段禁用消息队列功能
   cors:
     allowed-origins: "*"
   file-upload:

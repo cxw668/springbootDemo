@@ -5,7 +5,7 @@ spring:
     password:
     driver-class-name: org.h2.Driver
   ai:
-    open:
+    openai:
       api-key: test-siliconflow-key
       base-url: https://api.siliconflow.cn
       chat:

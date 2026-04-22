@@ -61,6 +61,9 @@ public class SecurityConfig {
                         
                         // AI 配置查询（开发环境开放）
                         .requestMatchers("/ai/config").permitAll()
+
+                        // AI Chat
+                        .requestMatchers("/ai/chat").permitAll()
                         
                         // Swagger/OpenAPI 文档（开发环境开放）
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()

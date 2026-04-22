@@ -81,6 +81,7 @@ app:
     enabled: true
     provider: SiliconFlow
     default-system-prompt: 你是一个有用的助手
+    timeout-seconds: 30  # LLM 请求超时时间(秒),根据网络情况和模型响应速度调整
   file-upload:
     upload-dir: ./uploads/avatars
     max-file-size: 10485760

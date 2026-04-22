@@ -3,12 +3,13 @@ package demo.messaging;
 import demo.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Component
-@ConditionalOnMissingBean(DomainEventPublisher.class)
+@ConditionalOnProperty(name = "app.messaging.enabled", havingValue = "false", matchIfMissing = true)
 public class NoOpDomainEventPublisher implements DomainEventPublisher {
 
     @Override

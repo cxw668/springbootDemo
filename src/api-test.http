@@ -3,7 +3,8 @@
 @token = 1234567890
 @adminToken = YOUR_ADMIN_TOKEN_HERE
 @userToken = YOUR_USER_TOKEN_HERE
-@siliconModel = Qwen/Qwen3.5-4B
+@aiToken = sk-vazcxstlxqbinneoutnkbtfyyqzianzoopfpaycqbjxcbtrv
+@siliconModel = Qwen/Qwen3-8B
 
 ### ==================== 认证接口 ====================
 
@@ -284,7 +285,7 @@ Authorization: Bearer {{token}}
 ### 24. AI 对话 - 显式指定模型与系统提示词
 POST {{baseUrl}}/ai/chat
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{aiToken}}
 
 {
   "model": "{{siliconModel}}",

@@ -18,7 +18,7 @@ public class TestJob {
     /**
      * 每30秒执行一次的测试任务
      */
-    @Scheduled(fixedRate = 30000)
+    // @Scheduled(fixedRate = 30000)
     public void testTask() {
         log.info("⏰ 定时任务测试 - 当前时间: {}", 
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));

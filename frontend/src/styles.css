@@ -1,0 +1,21 @@
+/* Global styles for improved UI */
+:root{
+  --bg:#f7f8fa; --card:#ffffff; --muted:#6b7280; --accent:#2563eb; --radius:8px;
+}
+body{font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); margin:0; color:#111827}
+.container{max-width:900px;margin:24px auto;padding:18px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+nav{display:flex;gap:12px}
+.nav-link{color:var(--accent);text-decoration:none;font-weight:600}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(15,23,42,0.05);padding:16px}
+input,textarea,select{width:100%;padding:8px 10px;border:1px solid #e6e9ef;border-radius:6px;font-size:14px}
+textarea{min-height:100px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;border:0;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:transparent;border:1px solid #e6e9ef}
+.muted{color:var(--muted)}
+.reply{white-space:pre-wrap;background:#f3f4f6;padding:12px;border-radius:6px;border:1px solid #eaeef5}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left}
+@media (max-width:640px){.container{margin:10px;padding:12px}}
+
