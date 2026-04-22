@@ -59,6 +59,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/auth/register").permitAll()
                         
+                        // AI 配置查询（开发环境开放）
+                        .requestMatchers("/ai/config").permitAll()
+                        
                         // Swagger/OpenAPI 文档（开发环境开放）
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         

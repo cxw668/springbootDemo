@@ -33,6 +33,14 @@ spring:
       simple:
         default-requeue-rejected: false # 被拒绝的消息不重回队列，而是进入 DLQ（死信队列）
         prefetch: 10
+  ai:
+    openai:
+      api-key: ${SILICONFLOW_API_KEY:not-configured}
+      base-url: ${SILICONFLOW_BASE_URL:https://api.siliconflow.cn}
+      chat:
+        options:
+          model: ${SILICONFLOW_CHAT_MODEL:Qwen/Qwen3.5-4B}
+          temperature: ${SILICONFLOW_TEMPERATURE:0.7}
 
 mybatis-plus:
   configuration:
@@ -69,6 +77,10 @@ app:
     allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   messaging:
     enabled: true
+  ai:
+    enabled: true
+    provider: SiliconFlow
+    default-system-prompt: 你是一个有用的助手
   file-upload:
     upload-dir: ./uploads/avatars
     max-file-size: 10485760

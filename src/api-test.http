@@ -3,6 +3,7 @@
 @token = 1234567890
 @adminToken = YOUR_ADMIN_TOKEN_HERE
 @userToken = YOUR_USER_TOKEN_HERE
+@siliconModel = Qwen/Qwen3.5-4B
 
 ### ==================== 认证接口 ====================
 
@@ -268,3 +269,30 @@ Authorization: Bearer {{adminToken}}
 ### 22. 删除文件 - 使用 USER Token（应该失败，USER 没有 user:delete 权限）
 DELETE {{baseUrl}}/api/files/delete?filePath=/uploads/documents/test.txt
 Authorization: Bearer {{userToken}}
+
+### ==================== Spring AI / 硅基流动 ====================
+
+### 23. AI 对话 - 默认使用配置模型（Qwen/Qwen3.5-4B）
+POST {{baseUrl}}/ai/chat
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "message": "你好，请介绍一下你自己"
+}
+
+### 24. AI 对话 - 显式指定模型与系统提示词
+POST {{baseUrl}}/ai/chat
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "model": "{{siliconModel}}",
+  "systemPrompt": "你是一个有用的助手",
+  "message": "请用三句话介绍 Spring AI 怎么接入 SiliconFlow",
+  "temperature": 0.7
+}
+
+### 25. 查看 AI 配置摘要（不返回 API Key）
+GET {{baseUrl}}/ai/config
+Authorization: Bearer {{token}}

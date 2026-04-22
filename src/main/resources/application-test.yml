@@ -4,6 +4,13 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  ai:
+    open:
+      api-key: test-siliconflow-key
+      base-url: https://api.siliconflow.cn
+      chat:
+        options:
+          model: Qwen/Qwen3.5-4B
   cache:
     type: simple
   rabbitmq:
@@ -21,6 +28,10 @@ mybatis-plus:
 app:
   messaging:
     enabled: false
+  ai:
+    enabled: false
+    provider: SiliconFlow
+    default-system-prompt: 你是一个有用的助手
   default-page-size: 5
   max-page-size: 50
   cors:
