@@ -17,16 +17,32 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.Disposable;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 @Service
 public class AiChatServiceImpl implements AiChatService {
 
     private static final String NOT_CONFIGURED_API_KEY = "not-configured";
+
+    // 专用线程池用于 LLM 调用,避免阻塞主线程池
+    private final ExecutorService llmExecutor = Executors.newFixedThreadPool(
+            4, 
+            r -> {
+                Thread thread = new Thread(r);
+                thread.setName("llm-chat-worker");
+                thread.setDaemon(true);
+                return thread;
+            }
+    );
 
     private final ObjectProvider<ChatModel> chatModelProvider;
     private final AiProperties aiProperties;
@@ -39,6 +55,9 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Value("${spring.ai.openai.chat.options.model:Qwen/Qwen3.5-4B}")
     private String defaultModel;
+
+    @Value("${app.ai.timeout-seconds:10}")
+    private int timeoutSeconds;
 
     public AiChatServiceImpl(ObjectProvider<ChatModel> chatModelProvider, AiProperties aiProperties) {
         this.chatModelProvider = chatModelProvider;
@@ -76,7 +95,23 @@ public class AiChatServiceImpl implements AiChatService {
                 .temperature(request.getTemperature())
                 .build();
 
-        ChatResponse response = chatModel.call(new Prompt(messages, options));
+        // Call the chat model with a timeout to avoid hanging if the provider is slow/unreachable
+        ChatResponse response;
+        try {
+            response = CompletableFuture.supplyAsync(
+                    () -> chatModel.call(new Prompt(messages, options)), 
+                    llmExecutor
+            ).get(timeoutSeconds, TimeUnit.SECONDS);
+        } catch (TimeoutException te) {
+            throw new BizException(BizCode.INTERNAL_ERROR, "LLM 请求超时(" + timeoutSeconds + "秒),请稍后重试");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // 恢复中断状态
+            throw new BizException(BizCode.INTERNAL_ERROR, "LLM 请求被中断");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            throw new BizException(BizCode.INTERNAL_ERROR, "调用 LLM 时发生错误: " + (cause != null ? cause.getMessage() : e.getMessage()));
+        }
+
         if (response == null || response.getResult() == null || response.getResult().getOutput() == null) {
             throw new BizException(BizCode.INTERNAL_ERROR, "硅基流动未返回有效响应");
         }
@@ -86,6 +121,70 @@ public class AiChatServiceImpl implements AiChatService {
                 resolvedModel,
                 response.getResult().getOutput().getText()
         );
+    }
+
+    @Override
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter stream(AiChatRequest request) {
+        if (!aiProperties.isEnabled()) {
+            throw new BizException(BizCode.FORBIDDEN, "AI 对话功能当前未开启");
+        }
+
+        if (!StringUtils.hasText(apiKey) || NOT_CONFIGURED_API_KEY.equals(apiKey)) {
+            throw new BizException(BizCode.INTERNAL_ERROR, "请先配置环境变量 SILICONFLOW_API_KEY");
+        }
+
+        ChatModel chatModel = chatModelProvider.getIfAvailable();
+        if (chatModel == null) {
+            throw new BizException(BizCode.INTERNAL_ERROR, "Spring AI 聊天模型未初始化");
+        }
+
+        String resolvedModel = StringUtils.hasText(request.getModel()) ? request.getModel() : defaultModel;
+        String resolvedSystemPrompt = StringUtils.hasText(request.getSystemPrompt())
+                ? request.getSystemPrompt()
+                : aiProperties.getDefaultSystemPrompt();
+
+        List<Message> messages = new ArrayList<>();
+        if (StringUtils.hasText(resolvedSystemPrompt)) {
+            messages.add(new SystemMessage(resolvedSystemPrompt));
+        }
+        messages.add(new UserMessage(request.getMessage()));
+
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
+                .model(resolvedModel)
+                .temperature(request.getTemperature())
+                .build();
+
+        SseEmitter emitter = new SseEmitter(0L);
+        try {
+            Flux<String> flux;
+            try {
+                flux = chatModel.stream(request.getMessage());
+            } catch (Throwable t) {
+                flux = chatModel.stream(new Prompt(messages, options)).map(resp -> resp == null ? "" : resp.toString());
+            }
+
+            Disposable disposable = flux.subscribe(
+                    chunk -> {
+                        try {
+                            emitter.send(chunk);
+                        } catch (IOException e) {
+                            emitter.completeWithError(e);
+                        }
+                    },
+                    err -> emitter.completeWithError(err),
+                    () -> emitter.complete()
+            );
+
+            emitter.onCompletion(disposable::dispose);
+            emitter.onTimeout(() -> {
+                disposable.dispose();
+                emitter.complete();
+            });
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+
+        return emitter;
     }
 
     @Override

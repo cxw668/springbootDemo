@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,7 +29,11 @@ public class AiController {
 
     @Operation(summary = "AI 对话", description = "默认走硅基流动的 Qwen/Qwen3.5-4B，可按请求覆盖模型")
     @PostMapping("/chat")
-    public Result<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
+    public Object chat(@Valid @RequestBody AiChatRequest request, @RequestHeader(value = "Accept", required = false) String accept) {
+        // If client expects server-sent events, return an SseEmitter streaming the model output
+        if (accept != null && accept.contains("text/event-stream")) {
+            return aiChatService.stream(request);
+        }
         return Result.success("调用成功", aiChatService.chat(request));
     }
 
