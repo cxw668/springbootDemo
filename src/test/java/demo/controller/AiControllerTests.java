@@ -42,7 +42,7 @@ class AiControllerTests {
     @Test
     @DisplayName("POST /ai/chat returns Result wrapper with AI reply")
     void testChatReturnsResult() throws Exception {
-        AiChatResponse response = new AiChatResponse("SiliconFlow", "Qwen/Qwen3.5-4B", "你好，我是一个 AI 助手。");
+        AiChatResponse response = new AiChatResponse("SiliconFlow", "Qwen3-8B", "你好，我是一个 AI 助手。");
         when(aiChatService.chat(org.mockito.ArgumentMatchers.any())).thenReturn(response);
 
         mockMvc.perform(post("/ai/chat")
@@ -54,7 +54,7 @@ class AiControllerTests {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.message").value("调用成功"))
                 .andExpect(jsonPath("$.data.provider").value("SiliconFlow"))
-                .andExpect(jsonPath("$.data.model").value("Qwen/Qwen3.5-4B"))
+                .andExpect(jsonPath("$.data.model").value("Qwen3-8B"))
                 .andExpect(jsonPath("$.data.reply").value("你好，我是一个 AI 助手。"));
     }
 
@@ -78,7 +78,7 @@ class AiControllerTests {
                 "enabled", true,
                 "provider", "SiliconFlow",
                 "baseUrl", "https://api.siliconflow.cn",
-                "defaultModel", "Qwen/Qwen3.5-4B",
+                "defaultModel", "Qwen3-8B",
                 "configured", false
         ));
 
@@ -86,7 +86,7 @@ class AiControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.provider").value("SiliconFlow"))
-                .andExpect(jsonPath("$.data.defaultModel").value("Qwen/Qwen3.5-4B"))
+                .andExpect(jsonPath("$.data.defaultModel").value("Qwen3-8B"))
                 .andExpect(jsonPath("$.data.configured").value(false));
     }
 }

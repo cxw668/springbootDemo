@@ -10,7 +10,7 @@ spring:
       base-url: https://api.siliconflow.cn
       chat:
         options:
-          model: Qwen/Qwen3.5-4B
+          model: Qwen3-8B
   cache:
     type: simple
   rabbitmq:

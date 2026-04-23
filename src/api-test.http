@@ -4,7 +4,7 @@
 @adminToken = YOUR_ADMIN_TOKEN_HERE
 @userToken = YOUR_USER_TOKEN_HERE
 @aiToken = sk-vazcxstlxqbinneoutnkbtfyyqzianzoopfpaycqbjxcbtrv
-@siliconModel = Qwen/Qwen3-8B
+@siliconModel = Qwen3-8B
 
 ### ==================== 认证接口 ====================
 
@@ -273,7 +273,7 @@ Authorization: Bearer {{userToken}}
 
 ### ==================== Spring AI / 硅基流动 ====================
 
-### 23. AI 对话 - 默认使用配置模型（Qwen/Qwen3.5-4B）
+### 23. AI 对话 - 默认使用配置模型（Qwen3-8B）
 POST {{baseUrl}}/ai/chat
 Content-Type: application/json
 Authorization: Bearer {{token}}

@@ -27,7 +27,7 @@ public class AiController {
         this.aiChatService = aiChatService;
     }
 
-    @Operation(summary = "AI 对话", description = "默认走硅基流动的 Qwen/Qwen3.5-4B，可按请求覆盖模型")
+    @Operation(summary = "AI 对话", description = "默认走硅基流动的 Qwen3-8B，可按请求覆盖模型")
     @PostMapping("/chat")
     public Object chat(@Valid @RequestBody AiChatRequest request, @RequestHeader(value = "Accept", required = false) String accept) {
         // If client expects server-sent events, return an SseEmitter streaming the model output

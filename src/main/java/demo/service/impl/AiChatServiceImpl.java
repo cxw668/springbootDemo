@@ -53,7 +53,7 @@ public class AiChatServiceImpl implements AiChatService {
     @Value("${spring.ai.openai.base-url:https://api.siliconflow.cn}")
     private String baseUrl;
 
-    @Value("${spring.ai.openai.chat.options.model:Qwen/Qwen3.5-4B}")
+    @Value("${spring.ai.openai.chat.options.model:Qwen3-8B}")
     private String defaultModel;
 
     @Value("${app.ai.timeout-seconds:10}")
@@ -154,35 +154,65 @@ public class AiChatServiceImpl implements AiChatService {
                 .temperature(request.getTemperature())
                 .build();
 
+        // 创建 SSE emitter，设置超时时间为 0（不超时）
         SseEmitter emitter = new SseEmitter(0L);
-        try {
-            Flux<String> flux;
+        
+        // 使用线程池异步处理流式响应，避免阻塞
+        llmExecutor.execute(() -> {
             try {
-                flux = chatModel.stream(request.getMessage());
-            } catch (Throwable t) {
-                flux = chatModel.stream(new Prompt(messages, options)).map(resp -> resp == null ? "" : resp.toString());
+                // 构建 Prompt
+                Prompt prompt = new Prompt(messages, options);
+                
+                // 调用流式接口
+                Flux<String> flux = chatModel.stream(prompt)
+                        .map(chatResponse -> {
+                            if (chatResponse == null) {
+                                return "";
+                            }
+                            var result = chatResponse.getResult();
+                            if (result == null) {
+                                return "";
+                            }
+                            var output = result.getOutput();
+                            if (output == null) {
+                                return "";
+                            }
+                            String text = output.getText();
+                            return text != null ? text : "";
+                        });
+                
+                // 订阅流式数据
+                Disposable disposable = flux.subscribe(
+                        chunk -> {
+                            try {
+                                if (chunk != null && !chunk.isEmpty()) {
+                                    // 发送 SSE 格式数据
+                                    emitter.send(SseEmitter.event()
+                                            .data(chunk)
+                                            .name("message"));
+                                }
+                            } catch (IOException e) {
+                                emitter.completeWithError(e);
+                            }
+                        },
+                        emitter::completeWithError,
+                        emitter::complete
+                );
+                
+                // 注册清理回调
+                emitter.onCompletion(disposable::dispose);
+                emitter.onTimeout(() -> {
+                    disposable.dispose();
+                    emitter.complete();
+                });
+                emitter.onError(ex -> {
+                    disposable.dispose();
+                });
+                
+            } catch (Exception e) {
+                emitter.completeWithError(e);
             }
-
-            Disposable disposable = flux.subscribe(
-                    chunk -> {
-                        try {
-                            emitter.send(chunk);
-                        } catch (IOException e) {
-                            emitter.completeWithError(e);
-                        }
-                    },
-                    err -> emitter.completeWithError(err),
-                    () -> emitter.complete()
-            );
-
-            emitter.onCompletion(disposable::dispose);
-            emitter.onTimeout(() -> {
-                disposable.dispose();
-                emitter.complete();
-            });
-        } catch (Exception e) {
-            emitter.completeWithError(e);
-        }
+        });
 
         return emitter;
     }
